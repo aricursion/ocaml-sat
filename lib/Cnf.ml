@@ -53,7 +53,8 @@ module Clause : CLAUSE = struct
     match c with
     | [] -> ""
     | (b, s) :: cs ->
-        if b then s ^ " " ^ pp_clause cs else "-" ^ s ^ " " ^ pp_clause cs
+        let name = if b then s ^ " " else "-" ^ s ^ " " in
+        name ^ pp_clause cs
 end
 
 module type CNF = sig
@@ -62,6 +63,8 @@ module type CNF = sig
   val from_dimacs : string -> t
   val to_dimacs : t -> (string, int) Hashtbl.t * string
   val add_clause : Clause.t -> t -> t
+  val add_clauses : Clause.t list -> t -> t
+  val from_clauses : Clause.t list -> t
   val stats : t -> int * int
   val empty : unit -> t
   val pp_cnf : t -> string
@@ -139,24 +142,23 @@ module Cnf : CNF = struct
     (ht, s)
 
   let add_clause clause cnf =
-    let ctr = ref 0 in
     let s =
       List.fold_left
-        (fun s (_, n) ->
-          if not (Set.mem n s) then (
-            ctr := !ctr + 1;
-            Set.add n s)
-          else s)
+        (fun s (_, n) -> if not (Set.mem n s) then Set.add n s else s)
         cnf.vars clause
     in
     {
       clauses = clause :: cnf.clauses;
       vars = s;
-      num_clauses = cnf.num_clauses + !ctr;
+      num_clauses = cnf.num_clauses + 1;
     }
+
+  let add_clauses cls_lst cnf =
+    List.fold_right (fun cls cnf_acc -> add_clause cls cnf_acc) cls_lst cnf
 
   let stats cnf = (Set.cardinal cnf.vars, cnf.num_clauses)
   let empty () = { clauses = []; vars = Set.empty; num_clauses = 0 }
+  let from_clauses cls_list = add_clauses cls_list (empty ())
 
   let pp_cnf cnf =
     List.fold_left (fun s cls -> s ^ Clause.pp_clause cls ^ "\n") "" cnf.clauses
