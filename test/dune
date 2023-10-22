@@ -1,0 +1,6 @@
+(tests
+ (names Cnf_test))
+
+(env
+  (dev
+    (flags (:standard  -warn-error -32))))

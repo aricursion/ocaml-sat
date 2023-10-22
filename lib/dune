@@ -1,0 +1,5 @@
+(library
+ (wrapped false)
+ (public_name ocaml_sat)
+ (modules Cnf)
+ (name ocaml_sat))

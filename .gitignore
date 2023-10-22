@@ -1,0 +1,3 @@
+.ocamlformat
+_build/
+_opam/
