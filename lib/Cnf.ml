@@ -35,16 +35,18 @@ module Clause : CLAUSE = struct
      -x1 -x2
   *)
   let from_string s =
-    let helper acc lit_string =
+    let helper lit_string acc =
       if lit_string.[0] = '-' then
         (false, String.sub lit_string 1 (String.length lit_string - 1)) :: acc
       else (true, lit_string) :: acc
     in
-    String.trim s |> String.split_on_char ' ' |> List.fold_left helper []
+    let s = String.trim s |> String.split_on_char ' ' in
+    List.fold_right helper s []
 
   (* Accepts a list of the form
      [(false, "x1"); (true, "x2"); (false, "x3")]
-     corresponding to the
+     corresponding to the clause
+     -x1 \/ x2 \/ -x3
   *)
 
   let rec pp_clause c =
@@ -62,6 +64,7 @@ module type CNF = sig
   val add_clause : Clause.t -> t -> t
   val stats : t -> int * int
   val empty : unit -> t
+  val pp_cnf : t -> string
 end
 
 module Cnf : CNF = struct
@@ -96,6 +99,9 @@ module Cnf : CNF = struct
       | _ -> failwith "DIMACS parsing fail"
     in
     let _, num_clauses = parse_spec spec in
+    let lines =
+      List.map (fun s -> String.sub s 0 (String.length s - 2)) lines
+    in
     let clauses = List.map Clause.from_string lines in
     let hs = Set.empty in
     let flatten_clauses = List.flatten clauses in
@@ -105,11 +111,11 @@ module Cnf : CNF = struct
   let to_dimacs (cnf : t) =
     let ht_init var_set =
       let ht = Hashtbl.create (Set.cardinal cnf.vars) in
-      let ctr = ref 1 in
+      let ctr = ref 0 in
       Set.fold
         (fun n () ->
-          if not (Hashtbl.mem ht n) then Hashtbl.add ht n !ctr;
-          ctr := !ctr + 1)
+          ctr := !ctr + 1;
+          if not (Hashtbl.mem ht n) then Hashtbl.add ht n !ctr)
         var_set ();
       ht
     in
@@ -125,10 +131,10 @@ module Cnf : CNF = struct
               "-" ^ string_of_int (Hashtbl.find ht s) ^ " " ^ disj_to_string xs)
     in
     let base =
-      Printf.sprintf "p cnf %d %d" (Set.cardinal cnf.vars) cnf.num_clauses
+      Printf.sprintf "p cnf %d %d\n" (Set.cardinal cnf.vars) cnf.num_clauses
     in
     let s =
-      List.fold_left (fun s c -> s ^ disj_to_string c ^ " 0\n") base cnf.clauses
+      List.fold_left (fun s c -> s ^ disj_to_string c ^ "0\n") base cnf.clauses
     in
     (ht, s)
 
@@ -151,4 +157,7 @@ module Cnf : CNF = struct
 
   let stats cnf = (Set.cardinal cnf.vars, cnf.num_clauses)
   let empty () = { clauses = []; vars = Set.empty; num_clauses = 0 }
+
+  let pp_cnf cnf =
+    List.fold_left (fun s cls -> s ^ Clause.pp_clause cls ^ "\n") "" cnf.clauses
 end

@@ -13,7 +13,7 @@
  (name ocaml_sat)
  (synopsis "A SAT library for Ocaml")
  (description "A library for interfacing with SAT solvers as well as CNF Encodings")
- (depends ocaml dune)
+ (depends ocaml dune base stdio)
  (tags
   ("SAT" "SAT Solver")))
 

@@ -17,5 +17,6 @@ module type CNF =
     val add_clause : Clause.t -> t -> t
     val stats : t -> int * int
     val empty : unit -> t
+    val pp_cnf : t -> string
   end
 module Cnf : CNF

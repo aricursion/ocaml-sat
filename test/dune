@@ -1,6 +1,10 @@
 (tests
+ (libraries ocaml_sat base stdio)
+ (preprocess
+  (pps ppx_inline_test ppx_expect ppx_assert))
  (names Cnf_test))
 
 (env
-  (dev
-    (flags (:standard  -warn-error -32))))
+ (dev
+  (flags
+   (:standard -warn-error -32-33))))
